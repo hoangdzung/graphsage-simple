@@ -147,13 +147,10 @@ def run_cora():
     temp = TEMP
     for batch in range(10000):
         batch_nodes = list(range(num_nodes))
-        start_time = time.time()
         optimizer.zero_grad()
-        loss = graphsage.nmincut_loss(batch_nodes, adj,temp=TEMP, beta=BETA)
+        loss = graphsage.nmincut_loss(batch_nodes, adj,temp=temp, beta=BETA)
         loss.backward()
         optimizer.step()
-        end_time = time.time()
-        times.append(end_time-start_time)
         if batch % 100 == 0:
             accs = classify(graphsage.embeds.detach().cpu().numpy(),labels, 0.5)
             print(batch, loss.item(), accs)
