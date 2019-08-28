@@ -153,10 +153,14 @@ def run_pubmed():
 
     graphsage = SupervisedGraphSage(3, enc2)
 #    graphsage.cuda()
-    rand_indices = np.random.permutation(num_nodes)
-    test = rand_indices[:1000]
-    val = rand_indices[1000:1500]
-    train = list(rand_indices[1500:])
+    # rand_indices = np.random.permutation(num_nodes)
+    # test = rand_indices[:1000]
+    # val = rand_indices[1000:1500]
+    # train = list(rand_indices[1500:])
+
+    train = list(range(140))
+    val = np.array(range(200, 500))
+    test = np.array(range(500, 1500))
 
     optimizer = torch.optim.SGD(filter(lambda p : p.requires_grad, graphsage.parameters()), lr=0.7)
     times = []
