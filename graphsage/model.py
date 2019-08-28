@@ -174,8 +174,8 @@ def run_cora():
         times.append(end_time-start_time)
         print (batch, loss.item())
 
-    val_output = graphsage.forward(val) 
-    print ("Validation F1:", f1_score(labels[val], val_output.data.numpy().argmax(axis=1), average="micro"))
+    test_output = graphsage.forward(test) 
+    print ("Testing F1:", f1_score(labels[test], test_output.data.numpy().argmax(axis=1), average="micro"))
     print ("Average batch time:", np.mean(times))
 
 def load_pubmed():
