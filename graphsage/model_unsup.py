@@ -168,7 +168,10 @@ def run_cora():
         optimizer.step()
         end_time = time.time()
         times.append(end_time-start_time)
-        print (batch, loss.item())
+        if batch % 100 == 0:
+            embeds,_ = graphsage.forward(list(range(num_nodes)))
+            accs = classify(embeds.detach().cpu().numpy(),labels, 0.5)
+            print(batch, loss.item(), accs)
 
     times = []
     for batch in range(100):
