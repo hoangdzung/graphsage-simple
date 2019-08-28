@@ -122,7 +122,7 @@ def run_cora():
 
     optimizer = torch.optim.SGD(filter(lambda p : p.requires_grad, graphsage.parameters()), lr=0.7)
     temp = TEMP
-    for batch in range(10000):
+    for batch in range(5000):
         batch_nodes = list(range(num_nodes))
         optimizer.zero_grad()
         loss = graphsage.nmincut_loss(batch_nodes, adj,temp=temp, beta=BETA)
@@ -131,8 +131,8 @@ def run_cora():
         if batch % 100 == 0:
             accs = classify(graphsage.embeds.detach().cpu().numpy(),labels, 0.5)
             print(batch, loss.item(), accs)
-        if batch % 1000:
-            temp = max(0.1, TEMP*np.exp(-0.0003*batch))
+        # if batch % 1000:
+        #     temp = max(0.1, TEMP*np.exp(-0.0003*batch))
 
     times = []
     for batch in range(100):
