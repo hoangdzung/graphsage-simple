@@ -69,6 +69,7 @@ class SupervisedGraphSage(nn.Module):
     def forward(self, nodes):
         embeds = self.enc(nodes)
         scores = self.weight.mm(embeds)
+        self.embeds, self.scores = embeds.t(), scores.t()
         return embeds.t(), scores.t()
 
     def loss(self, nodes, labels):
@@ -122,6 +123,8 @@ def run_cora():
     features = nn.Embedding(2708, 1433)
     features.weight = nn.Parameter(torch.FloatTensor(feat_data), requires_grad=False)
     adj = Variable(torch.FloatTensor(adj), requires_grad=False)
+    if torch.cuda.is_available():
+        features, adj = features.cuda(), adj.cuda()
    # features.cuda()
 
     agg1 = MeanAggregator(features, cuda=True)
@@ -133,7 +136,8 @@ def run_cora():
     enc2.num_samples = 5
 
     graphsage = SupervisedGraphSage(7, enc2)
-#    graphsage.cuda()
+    if torch.cuda.is_available():
+        graphsage = graphsage.cuda()
     # rand_indices = np.random.permutation(num_nodes)
     # test = rand_indices[:1000]
     # val = rand_indices[1000:1500]
@@ -163,15 +167,17 @@ def run_cora():
         random.shuffle(train)
         start_time = time.time()
         optimizer.zero_grad()
-        loss = graphsage.loss(batch_nodes, 
-                Variable(torch.LongTensor(labels[np.array(batch_nodes)])))
+        batch_nodes = Variable(torch.LongTensor(labels[np.array(batch_nodes)]))
+        if torch.cuda.is_available():
+            batch_nodes = batch_nodes.cuda()
+        loss = graphsage.loss(batch_nodes, batch_nodes)
         loss.backward()
         optimizer.step()
         end_time = time.time()
         times.append(end_time-start_time)
         print (batch, loss.item())
 
-    test_output = graphsage.forward(test) 
+    _,test_output = graphsage.forward(test) 
     print ("Testing F1:", f1_score(labels[test], test_output.data.numpy().argmax(axis=1), average="micro"))
     print ("Average batch time:", np.mean(times))
 
