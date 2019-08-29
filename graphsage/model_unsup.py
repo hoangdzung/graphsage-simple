@@ -34,6 +34,9 @@ def fixed_unigram_candidate_sampler(num_sampled, unique, range_max, distortion, 
     sampled = np.random.choice(range_max, num_sampled, p=prob, replace=~unique)
     return sampled
 
+def sample_negative(anchors, neg_adj_list):
+    return [random.choice(neg_adj_list[anchor]) for anchor in anchors]
+        
 def sigmoid_cross_entropy_with_logits(labels, logits):
     sig_aff = torch.sigmoid(logits)
     loss = labels * -torch.log(sig_aff+1e-10) + (1 - labels) * -torch.log(1 - sig_aff+1e-10)
@@ -45,7 +48,8 @@ def node2vec(outputs1, outputs2, neg_outputs, neg_sample_weights=1.0):
     neg_outputs = F.normalize(neg_outputs, dim=1)
 
     true_aff = F.cosine_similarity(outputs1, outputs2)
-    neg_aff = outputs1.mm(neg_outputs.t())    
+    # neg_aff = outputs1.mm(neg_outputs.t())    
+    neg_aff = F.cosine_similarity(outputs1, neg_outputs)
     true_labels = torch.ones(true_aff.shape)
     if torch.cuda.is_available():
         true_labels = true_labels.cuda()
@@ -120,6 +124,7 @@ def run_cora():
     random.seed(1)
     num_nodes = 2708
     feat_data, labels, adj_lists, adj, degrees, edges = load_cora()
+    neg_adj_list = [list(set(range(num_nodes)).intersection(adj_lists[node])) for node in range(num_nodes)]
     features = nn.Embedding(2708, 1433)
     features.weight = nn.Parameter(torch.FloatTensor(feat_data), requires_grad=False)
     adj = Variable(torch.FloatTensor(adj), requires_grad=False)
@@ -154,13 +159,14 @@ def run_cora():
         batch_edges = edges[:256]
         random.shuffle(batch_edges)
         nodes1, nodes2 = batch_edges[:, 0], batch_edges[:,1]
-        neg_nodes = fixed_unigram_candidate_sampler(
-            num_sampled=NUM_SAMPLED,
-            unique=False,
-            range_max=len(degrees),
-            distortion=0.75,
-            unigrams=degrees
-        )   
+        # neg_nodes = fixed_unigram_candidate_sampler(
+        #     num_sampled=NUM_SAMPLED,
+        #     unique=False,
+        #     range_max=len(degrees),
+        #     distortion=0.75,
+        #     unigrams=degrees
+        # )
+        neg_nodes = sample_negative(nodes1, neg_adj_list)   
         start_time = time.time()
         optimizer.zero_grad()
         loss = graphsage.unsup_loss(nodes1, nodes2, neg_nodes)
